@@ -1,0 +1,52 @@
+export const events = [
+  {
+    id: 1,
+    title: 'Sunrise Event',
+    date: '2026-03-01',
+    day: 'Sunday',
+    start: '08:00 AM',
+    end: '09:00 AM',
+    location: 'Down the Rabbit Hole',
+    description: 'Tequilla and breakfast with the Mad Hatter'
+  },
+  {
+    id: 2,
+    title: 'Moonrise Event',
+    date: '2026-03-01',
+    day: 'Sunday',
+    start: '10:00 AM',
+    end: '11:00 AM',
+    location: 'Yoga with the Cheshire Cat',
+    description: 'Calm and relax with the Cheshire Cat'
+  },
+  {
+    id: 3,
+    title: 'Egg Colorin Event',
+    date: '2026-03-02',
+    day: 'Monday',
+    start: '08:00 AM',
+    end: '09:00 AM',
+    location: 'Disco Pickle Bar',
+    description: 'Whistling and egg coloring Pickle friends'
+  },
+  {
+    id: 4,
+    title: 'Donuts and Bacon',
+    date: '2026-03-03',
+    day: 'Tuesday',
+    start: '02:00 PM',
+    end: '03:00 PM',
+    location: 'Bettys Boutique',
+    description: 'Eat bacon and donuts with Betty and her friends and get some new clothes for the season'
+  },
+  {
+    id: 5,
+    title: 'Golf with the Queen',
+    date: '2026-03-03',
+    day: 'Tuesday',
+    start: '01:00 PM',
+    end: '02:00 PM',
+    location: 'The Great Hall',
+    description: 'Mini Golf with the Queen of Hearts and her card soldiers. Watch out for the flamingos and hedgehogs!'
+  }
+];
