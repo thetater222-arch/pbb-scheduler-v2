@@ -126,8 +126,11 @@ function renderHappeningNow(list) {
     <ul class="event-list happening-now">
       ${list.map(e => `
         <li class="event-item now">
-          <strong>${e.title}</strong> — <small>${e.location}</small><br />
-          <small>${e.day} — ${e.date} | ${e.start} - ${e.end}</small>
+          <button class="fav-btn ${favorites.has(e.id) ? 'active' : ''}" data-id="${e.id}" aria-label="Toggle favorite">❤</button>
+          <strong>${e.title}</strong><br />
+          <small>${e.day} — ${e.date} | ${e.start} - ${e.end}</small><br />
+          <span>${e.location} — ${e.description}</span><br />
+          <small class="tags">${(e.tags || []).map(t => `<span class="tag">${t}</span>`).join(' ')}</small>
         </li>
       `).join('')}
     </ul>
