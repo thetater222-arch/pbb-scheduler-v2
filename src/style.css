@@ -162,3 +162,23 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Happening Now button + header */
+.now-header {
+  margin: 1rem 0;
+}
+#happeningNowBtn {
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  border: 1px solid #ffb86b;
+  background: linear-gradient(180deg, #ffd9b3, #ffb86b);
+  color: #111;
+  font-weight: 600;
+}
+#happeningNowBtn:hover {
+  box-shadow: 0 0 8px #ffb86b33;
+}
+#happeningNowBtn.active {
+  box-shadow: 0 0 12px #ffb86b55;
+  transform: translateY(-1px);
+}

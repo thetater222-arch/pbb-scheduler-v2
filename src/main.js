@@ -7,13 +7,17 @@ import { events } from './events.js'
 const FAVORITES_KEY = 'pbb:favorites';
 let favorites = new Set(JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]'));
 let currentDayFilter = undefined;
+let currentTagFilter = undefined;
 
 // optionally supply a day name (e.g. "Sunday") to filter events by the event.day field
-function renderEvents(list, dayName) {
+function renderEvents(list, dayName, tagName) {
   if (!list || list.length === 0) return '<p>No events scheduled</p>';
   let filtered = list;
   if (dayName) {
     filtered = list.filter((e) => e.day === dayName);
+  }
+  if (tagName) {
+    filtered = filtered.filter((e) => Array.isArray(e.tags) && e.tags.includes(tagName));
   }
 
   if (filtered.length === 0) {
@@ -29,7 +33,8 @@ function renderEvents(list, dayName) {
               <button class="fav-btn ${favorites.has(e.id) ? 'active' : ''}" data-id="${e.id}" aria-label="Toggle favorite">❤</button>
               <strong>${e.title}</strong><br />
               <small>${e.day} — ${e.date} | ${e.start} - ${e.end}</small><br />
-              <span>${e.location} — ${e.description}</span>
+              <span>${e.location} — ${e.description}</span><br />
+              <small class="tags">${(e.tags || []).map(t => `<span class="tag">${t}</span>`).join(' ')}</small>
             </li>`
         )
         .join('')}
@@ -45,8 +50,7 @@ function toggleFavorite(id) {
   }
   localStorage.setItem(FAVORITES_KEY, JSON.stringify([...favorites]));
   // re-render current view
-  document.getElementById('eventsContainer').innerHTML = renderEvents(events, currentDayFilter);
-  attachFavListeners();
+  updateEventsView();
 }
 
 function attachFavListeners() {
@@ -70,7 +74,7 @@ function populateDaySelector(days) {
 }
 
 function renderFavorites(dayName) {
-  const favEvents = events.filter((e) => favorites.has(e.id) && (!dayName || e.day === dayName));
+  const favEvents = events.filter((e) => favorites.has(e.id) && (!dayName || e.day === dayName) && (!currentTagFilter || (Array.isArray(e.tags) && e.tags.includes(currentTagFilter))));
   if (favEvents.length === 0) return '<p>No favorite events</p>';
   return `
     <ul class="event-list">
@@ -81,12 +85,75 @@ function renderFavorites(dayName) {
               <button class="fav-btn ${favorites.has(e.id) ? 'active' : ''}" data-id="${e.id}" aria-label="Toggle favorite">❤</button>
               <strong>${e.title}</strong><br />
               <small>${e.day} — ${e.date} | ${e.start} - ${e.end}</small><br />
-              <span>${e.location} — ${e.description}</span>
+              <span>${e.location} — ${e.description}</span><br />
+              <small class="tags">${(e.tags || []).map(t => `<span class="tag">${t}</span>`).join(' ')}</small>
             </li>`
         )
         .join('')}
     </ul>
   `;
+}
+
+// parse a date string like '2026-03-01' and a time like '08:00 AM' into a Date
+function parseDateTime(dateStr, timeStr) {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  let [timePart, ampm] = timeStr.split(' ');
+  let [hour, minute] = timePart.split(':').map(Number);
+  if (ampm) {
+    ampm = ampm.toUpperCase();
+    if (ampm === 'PM' && hour !== 12) hour += 12;
+    if (ampm === 'AM' && hour === 12) hour = 0;
+  }
+  return new Date(year, month - 1, day, hour, minute);
+}
+
+function getEventsHappeningNow(list) {
+  const now = new Date();
+  return list.filter((e) => {
+    try {
+      const start = parseDateTime(e.date, e.start);
+      const end = parseDateTime(e.date, e.end);
+      return now >= start && now <= end;
+    } catch (err) {
+      return false;
+    }
+  });
+}
+
+function renderHappeningNow(list) {
+  if (!list || list.length === 0) return '<p>No events happening now</p>';
+  return `
+    <ul class="event-list happening-now">
+      ${list.map(e => `
+        <li class="event-item now">
+          <strong>${e.title}</strong> — <small>${e.location}</small><br />
+          <small>${e.day} — ${e.date} | ${e.start} - ${e.end}</small>
+        </li>
+      `).join('')}
+    </ul>
+  `;
+}
+
+function populateTagSelector(tags) {
+  const selector = document.getElementById('tagSelector');
+  if (!selector) return;
+  selector.innerHTML = '<option value="">-- all tags --</option>' +
+    tags.map(t => `<option value="${t}">${t}</option>`).join('');
+}
+
+function updateEventsView() {
+  const happeningBtn = document.getElementById('happeningNowBtn');
+  const nowActive = happeningBtn && happeningBtn.classList.contains('active');
+  const eventsContainer = document.getElementById('eventsContainer');
+  if (nowActive) {
+    const nowList = getEventsHappeningNow(events).filter(ev => !currentTagFilter || (Array.isArray(ev.tags) && ev.tags.includes(currentTagFilter)));
+    eventsContainer.innerHTML = renderHappeningNow(nowList);
+  } else if (document.getElementById('viewFavBtn').classList.contains('active')) {
+    eventsContainer.innerHTML = renderFavorites(currentDayFilter);
+  } else {
+    eventsContainer.innerHTML = renderEvents(events, currentDayFilter, currentTagFilter);
+  }
+  attachFavListeners();
 }
 
 function init() {
@@ -101,8 +168,15 @@ function init() {
         <button id="viewAllBtn" class="view-btn active">All</button>
         <button id="viewFavBtn" class="view-btn">Favorites</button>
       </div>
-      <label for="daySelector">Filter by day:</label>
-      <select id="daySelector"></select>
+      <div class="filters">
+        <label for="daySelector">Filter by day:</label>
+        <select id="daySelector"></select>
+        <label for="tagSelector">Filter by tag:</label>
+        <select id="tagSelector"></select>
+      </div>
+      <div class="now-header">
+        <button id="happeningNowBtn" class="view-btn">Happening Now</button>
+      </div>
       <div id="eventsContainer">
         ${renderEvents(events)}
       </div>
@@ -110,36 +184,67 @@ function init() {
   `;
 
   populateDaySelector(uniqueDays);
+  // compute unique tags
+  const uniqueTags = [...new Set(events.flatMap(e => e.tags || []))];
+  populateTagSelector(uniqueTags);
 
   // attach favorite handlers for initial render
   attachFavListeners();
 
+  // wire Happening Now button
+  const happeningBtn = document.getElementById('happeningNowBtn');
+  if (happeningBtn) {
+    happeningBtn.addEventListener('click', () => {
+      const isActive = happeningBtn.classList.toggle('active');
+      // when activating, clear other view active states
+      if (isActive) {
+        document.getElementById('viewAllBtn').classList.remove('active');
+        document.getElementById('viewFavBtn').classList.remove('active');
+      } else {
+        // restore to All view when toggled off
+        document.getElementById('viewAllBtn').classList.add('active');
+      }
+      updateEventsView();
+    });
+  }
+
   document.getElementById('viewAllBtn').addEventListener('click', () => {
     document.getElementById('viewAllBtn').classList.add('active');
     document.getElementById('viewFavBtn').classList.remove('active');
+    const hb = document.getElementById('happeningNowBtn');
+    if (hb) hb.classList.remove('active');
     currentDayFilter = undefined;
     document.getElementById('daySelector').value = '';
-    document.getElementById('eventsContainer').innerHTML = renderEvents(events);
-    attachFavListeners();
+    updateEventsView();
   });
 
   document.getElementById('viewFavBtn').addEventListener('click', () => {
     document.getElementById('viewFavBtn').classList.add('active');
     document.getElementById('viewAllBtn').classList.remove('active');
-    document.getElementById('eventsContainer').innerHTML = renderFavorites(currentDayFilter);
-    attachFavListeners();
+    const hb = document.getElementById('happeningNowBtn');
+    if (hb) hb.classList.remove('active');
+    updateEventsView();
   });
 
   document.getElementById('daySelector').addEventListener('change', (e) => {
     const day = e.target.value;
     currentDayFilter = day || undefined;
-    if (document.getElementById('viewFavBtn').classList.contains('active')) {
-      document.getElementById('eventsContainer').innerHTML = renderFavorites(currentDayFilter);
-    } else {
-      document.getElementById('eventsContainer').innerHTML = renderEvents(events, currentDayFilter);
-    }
-    attachFavListeners();
+    updateEventsView();
   });
+
+  document.getElementById('tagSelector').addEventListener('change', (e) => {
+    const tag = e.target.value;
+    currentTagFilter = tag || undefined;
+    updateEventsView();
+  });
+
+  // update happening-now every 30s
+  setInterval(() => {
+    const hb = document.getElementById('happeningNowBtn');
+    if (hb && hb.classList.contains('active')) {
+      updateEventsView();
+    }
+  }, 30 * 1000);
 }
 
 init();
