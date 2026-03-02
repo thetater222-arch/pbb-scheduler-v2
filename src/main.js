@@ -144,6 +144,25 @@ function populateTagSelector(tags) {
     tags.map(t => `<option value="${t}">${t}</option>`).join('');
 }
 
+function updateAppliedSummary() {
+  const summary = document.getElementById('appliedSummary');
+  if (!summary) return;
+
+  const happeningBtn = document.getElementById('happeningNowBtn');
+  const favBtn = document.getElementById('viewFavBtn');
+
+  let currentView = 'All';
+  if (happeningBtn && happeningBtn.classList.contains('active')) {
+    currentView = 'Happening Now';
+  } else if (favBtn && favBtn.classList.contains('active')) {
+    currentView = 'Favorites';
+  }
+
+  const dayLabel = currentDayFilter || 'All days';
+  const tagLabel = currentTagFilter || 'All tags';
+  summary.textContent = `Applied: View = ${currentView} • Day = ${dayLabel} • Tag = ${tagLabel}`;
+}
+
 function updateEventsView() {
   const happeningBtn = document.getElementById('happeningNowBtn');
   const nowActive = happeningBtn && happeningBtn.classList.contains('active');
@@ -156,6 +175,7 @@ function updateEventsView() {
   } else {
     eventsContainer.innerHTML = renderEvents(events, currentDayFilter, currentTagFilter);
   }
+  updateAppliedSummary();
   attachFavListeners();
 }
 
@@ -180,6 +200,7 @@ function init() {
       <div class="now-header">
         <button id="happeningNowBtn" class="view-btn">Happening Now</button>
       </div>
+      <p id="appliedSummary" class="applied-summary"></p>
       <div id="eventsContainer">
         ${renderEvents(events)}
       </div>
@@ -193,6 +214,7 @@ function init() {
 
   // attach favorite handlers for initial render
   attachFavListeners();
+  updateAppliedSummary();
 
   // wire Happening Now button
   const happeningBtn = document.getElementById('happeningNowBtn');

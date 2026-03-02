@@ -150,6 +150,12 @@ button:focus-visible {
   box-shadow: 0 0 8px #646cff22;
 }
 
+.applied-summary {
+  margin: 0.5rem 0 1rem;
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;
