@@ -182,6 +182,23 @@ function updateEventsView() {
   attachFavListeners();
 }
 
+function resetAllFilters() {
+  currentDayFilter = undefined;
+  currentTagFilter = undefined;
+
+  const daySelector = document.getElementById('daySelector');
+  const tagSelector = document.getElementById('tagSelector');
+  const allBtn = document.getElementById('viewAllBtn');
+  const favBtn = document.getElementById('viewFavBtn');
+  const happeningBtn = document.getElementById('happeningNowBtn');
+
+  if (daySelector) daySelector.value = '';
+  if (tagSelector) tagSelector.value = '';
+  if (allBtn) allBtn.classList.add('active');
+  if (favBtn) favBtn.classList.remove('active');
+  if (happeningBtn) happeningBtn.classList.remove('active');
+}
+
 function getEventsHeading() {
   const firstEventWithDate = events.find((eventItem) => typeof eventItem.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(eventItem.date));
   if (firstEventWithDate) {
@@ -251,12 +268,7 @@ function init() {
   }
 
   document.getElementById('viewAllBtn').addEventListener('click', () => {
-    document.getElementById('viewAllBtn').classList.add('active');
-    document.getElementById('viewFavBtn').classList.remove('active');
-    const hb = document.getElementById('happeningNowBtn');
-    if (hb) hb.classList.remove('active');
-    currentDayFilter = undefined;
-    document.getElementById('daySelector').value = '';
+    resetAllFilters();
     updateEventsView();
   });
 
