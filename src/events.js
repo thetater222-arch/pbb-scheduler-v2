@@ -1,4 +1,4 @@
-export const events = [
+export const defaultEvents = [
   {
     id: 1,
     title: 'Sunrise Event',

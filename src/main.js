@@ -2,12 +2,15 @@ import './style.css'
 
 // import local image so bundler resolves the path
 import banner from './assets/PBBSchedulerMainPic.png'
-import { events } from './events.js'
+import { fetchEventsFromSheet } from './googleSheetsLoader.js'
+import { GOOGLE_SHEET_CONFIG } from './config.js'
+import { defaultEvents } from './events.js'
 
 const FAVORITES_KEY = 'pbb:favorites';
 let favorites = new Set(JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]'));
 let currentDayFilter = undefined;
 let currentTagFilter = undefined;
+let events = []; // Will be populated from Google Sheets
 
 // optionally supply a day name (e.g. "Sunday") to filter events by the event.day field
 function renderEvents(list, dayName, tagName) {
@@ -179,6 +182,20 @@ function updateEventsView() {
   attachFavListeners();
 }
 
+function getEventsHeading() {
+  const firstEventWithDate = events.find((eventItem) => typeof eventItem.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(eventItem.date));
+  if (firstEventWithDate) {
+    const year = firstEventWithDate.date.slice(0, 4);
+    return `${year} List of Events`;
+  }
+
+  if (/^\d{4}$/.test(GOOGLE_SHEET_CONFIG.SHEET_NAME)) {
+    return `${GOOGLE_SHEET_CONFIG.SHEET_NAME} List of Events`;
+  }
+
+  return 'List of Events';
+}
+
 function init() {
   // compute unique day names from events (uses the `day` field on each event)
   const uniqueDays = [...new Set(events.map((e) => e.day))];
@@ -186,7 +203,7 @@ function init() {
     <div>
       <h1>PBB Schedule Helper</h1>
       <img src="${banner}" alt="PPB Pic" class="header-image" />
-      <h2>2026 List of Events</h2>
+      <h2>${getEventsHeading()}</h2>
       <div class="view-toggle">
         <button id="viewAllBtn" class="view-btn active">All</button>
         <button id="viewFavBtn" class="view-btn">Favorites</button>
@@ -272,5 +289,28 @@ function init() {
   }, 30 * 1000);
 }
 
-init();
+// Load events from Google Sheets and initialize the app
+async function initApp() {
+  try {
+    // Try to fetch from Google Sheets
+    const sheetsEvents = await fetchEventsFromSheet();
+    if (sheetsEvents && sheetsEvents.length > 0) {
+      events = sheetsEvents;
+      console.log('Events loaded from Google Sheets:', events.length);
+    } else {
+      // Fall back to default events if sheet is empty
+      events = defaultEvents;
+      console.log('Loaded from default events (sheet was empty)');
+    }
+  } catch (error) {
+    // Fall back to default events if there's an error
+    console.error('Failed to load from Google Sheets, using defaults:', error);
+    events = defaultEvents;
+  }
+  
+  // Initialize the UI
+  init();
+}
+
+initApp();
 
